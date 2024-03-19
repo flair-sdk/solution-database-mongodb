@@ -29,7 +29,7 @@ describe("solution", () => {
       context,
       {
         schema: "schema.yaml",
-        databaseName: "indexer",
+        databaseName: "my_db",
         collectionsPrefix: "indexer_",
         connectionUri: '{{ secret("mongodb.uri") }}',
       },
@@ -64,7 +64,7 @@ CREATE TABLE sink_Swap (
 ) WITH (
   'connector' = 'mongodb',
   'uri' = '{{ secret(\"mongodb.uri\") }}',
-  'database' = 'indexer',
+  'database' = 'my_db',
   'collection' = 'indexer_Swap'
 );
 

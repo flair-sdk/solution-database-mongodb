@@ -51,7 +51,7 @@ CREATE TABLE sink_${entityType} (
 ) WITH (
   'connector' = 'mongodb',
   'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
-  'database' = 'indexer',
+  'database' = '${config.databaseName}',
   'collection' = '${collectionName}'
 );
 
@@ -82,8 +82,23 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       inputSql: `database/mongodb-${context.identifier}/streaming.sql`,
     })
 
+    // manifest.triggers.push({
+    //   event: 'AfterBackfillSuccess',
+    //   action: {
+    //     method: 'triggerEnricher',
+    //     payload: {
+    //       id: `database-mongodb-${context.identifier}-batch`
+    //     }
+    //   }
+    // });
+
     return manifest
   },
+  // registerScripts: async (context, config) => {
+  //   return {
+  //     'full-database-sync': () => {},
+  //   }
+  // }
 }
 
 export default definition
