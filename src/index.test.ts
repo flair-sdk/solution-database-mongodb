@@ -1,7 +1,7 @@
 import { describe, it, expect, jest } from "@jest/globals";
 
 import { EnricherEngine, FieldType, SolutionContext } from "flair-sdk";
-import solutionDefinition from "./index";
+import solutionDefinition from "./index.js";
 
 describe("solution", () => {
   it("should generate streaming sql file", async () => {

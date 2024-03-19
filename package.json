@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": false,
   "description": "Bundled solution to add MongoDB database sync to a Flair indexing cluster",
-  "main": "./dist/cjs/index.js",
+  "type": "module",
+  "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
   "typings": "./dist/types/index.d.ts",
   "scripts": {
@@ -12,7 +13,7 @@
     "format": "rome format . --write",
     "lint": "rome check .",
     "lint:fix": "pnpm lint --apply-unsafe",
-    "build": "tsc --project tsconfig.json --module commonjs --outDir ./dist/cjs --removeComments --verbatimModuleSyntax false && cp package.json ./dist/cjs/package.json"
+    "build": "tsc --project tsconfig.json --outDir ./dist --removeComments --verbatimModuleSyntax false"
   },
   "keywords": [],
   "author": "gm@flair.build",

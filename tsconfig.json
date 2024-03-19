@@ -29,18 +29,16 @@
     "importHelpers": true, // This is only used for build validation. Since we do not have `tslib` installed, this will fail if we accidentally make use of anything that'd require injection of helpers.
 
     // Language and environment
-    "moduleResolution": "Node",
-    "module": "CommonJS",
-    "target": "ES2021", // Setting this to `ES2021` enables native support for `Node v16+`: https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping.
-    "lib": [
-      "ES2022", // By using ES2022 we get access to the `.cause` property on `Error` instances.
-      "DOM"
-    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
 
     // Skip type checking for node modules
     "skipLibCheck": true,
 
     "rootDir": "src",
+    "outDir": "dist",
     "declaration": true,
     "declarationDir": "dist/types",
     "declarationMap": true
