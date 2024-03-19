@@ -1,0 +1,45 @@
+{
+  "name": "@flair-sdk/solution-database-mongodb",
+  "version": "0.0.1",
+  "description": "Bundled solution to add MongoDB database sync to a Flair indexing cluster",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/types/index.d.ts",
+  "typings": "./dist/types/index.d.ts",
+  "scripts": {
+    "format": "rome format . --write",
+    "lint": "rome check .",
+    "lint:fix": "pnpm lint --apply-unsafe",
+    "build": "tsc --project tsconfig.json --module commonjs --outDir ./dist/cjs --removeComments --verbatimModuleSyntax false && cp package.json ./dist/cjs/package.json"
+  },
+  "keywords": [],
+  "author": "gm@flair.build",
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "src/**/*.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/cjs/index.js"
+    }
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.4"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "license": "MIT",
+  "dependencies": {
+    "flair-sdk": "^1.5.4"
+  },
+  "devDependencies": {
+    "rome": "^12.1.3",
+    "tslib": "^2.6.1",
+    "typescript": "^5.1.6"
+  }
+}
