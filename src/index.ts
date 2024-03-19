@@ -1,5 +1,6 @@
 import {
   EnricherEngine,
+  FieldType,
   Schema,
   SolutionContext,
   SolutionDefinition,
@@ -18,40 +19,51 @@ const definition: SolutionDefinition<Config> = {
     let streamingSql = `SET 'execution.runtime-mode' = 'STREAMING';`
 
     for (const entityType in mergedSchema) {
-      const collectionName = `${config.collectionsPrefix || ''}${entityType}`
+      try {
+        const collectionName = `${config.collectionsPrefix || ''}${entityType}`
 
-      const fieldsSql = Object.entries(mergedSchema[entityType])
-        .map(([fieldName, fieldType]) => `${fieldName} ${fieldType}`)
-        .join(', ')
+        const fieldsSql = Object.entries(mergedSchema[entityType])
+          .map(
+            ([fieldName, fieldType]) =>
+              `\`${fieldName}\` ${getSqlType(fieldType)}`,
+          )
+          .join(', ')
 
-      streamingSql += `
+        streamingSql += `
 ---
 --- ${entityType}
 ---
 CREATE TABLE source_${entityType} (
-    ${fieldsSql}
-    PRIMARY KEY (\`entityId\`) NOT ENFORCED;
+  ${fieldsSql}
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED;
 ) WITH (
-    'connector' = 'stream',
-    'mode' = 'cdc',
-    'namespace' = '{{ namespace }}',
-    'entity-type' = '${entityType}',
-    'scan.startup.mode' = 'timestamp',
-    'scan.startup.timestamp-millis' = '{{ chrono("2 hours ago") * 1000 }}'
-)
+  'connector' = 'stream',
+  'mode' = 'cdc',
+  'namespace' = '{{ namespace }}',
+  'entity-type' = '${entityType}',
+  'scan.startup.mode' = 'timestamp',
+  'scan.startup.timestamp-millis' = '{{ chrono("2 hours ago") * 1000 }}'
+);
 
 CREATE TABLE sink_${entityType} (
-    ${fieldsSql}
-    PRIMARY KEY (\`entityId\`) NOT ENFORCED
+  ${fieldsSql}
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED
 ) WITH (
-    'connector' = 'mongodb',
-    'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
-    'database' = 'indexer',
-    'collection' = '${collectionName}'
+  'connector' = 'mongodb',
+  'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
+  'database' = 'indexer',
+  'collection' = '${collectionName}'
 );
 
 INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId IS NOT NULL;
 `
+      } catch (e: any) {
+        throw new Error(
+          `Failed to prepare manifest for entityType ${entityType}: ${
+            e?.stack || e?.message || e?.toString()
+          }`,
+        )
+      }
     }
 
     if (!manifest.enrichers?.length) {
@@ -119,4 +131,23 @@ async function loadSchema(
   }
 
   return mergedSchema
+}
+
+function getSqlType(fieldType: FieldType) {
+  switch (fieldType) {
+    case FieldType.String:
+      return 'STRING'
+    case FieldType.Integer:
+      return 'BIGINT'
+    case FieldType.Float:
+      return 'DOUBLE'
+    case FieldType.Boolean:
+      return 'BOOLEAN'
+    case FieldType.Object:
+      return 'STRING'
+    case FieldType.Array:
+      return 'STRING'
+    default:
+      throw new Error(`Unsupported field type: ${fieldType}`)
+  }
 }
