@@ -1,6 +1,7 @@
 {
   "name": "@flair-sdk/solution-database-mongodb",
   "version": "0.0.1",
+  "private": false,
   "description": "Bundled solution to add MongoDB database sync to a Flair indexing cluster",
   "main": "./dist/cjs/index.js",
   "types": "./dist/types/index.d.ts",
