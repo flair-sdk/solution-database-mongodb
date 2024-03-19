@@ -4,6 +4,7 @@ import {
   Schema,
   SolutionContext,
   SolutionDefinition,
+  SolutionScriptFunction,
 } from 'flair-sdk'
 
 export type Config = {
@@ -17,6 +18,7 @@ const definition: SolutionDefinition<Config> = {
   prepareManifest: async (context, config, manifest) => {
     const mergedSchema = await loadSchema(context, config.schema)
     let streamingSql = `SET 'execution.runtime-mode' = 'STREAMING';`
+    let batchSql = `SET 'execution.runtime-mode' = 'BATCH';`
 
     for (const entityType in mergedSchema) {
       try {
@@ -24,17 +26,13 @@ const definition: SolutionDefinition<Config> = {
 
         if (!mergedSchema[entityType]?.entityId) {
           throw new Error(
-            `entityId field is required, but missing for "${entityType}" in "${
-              config.schema
-            }"`,
+            `entityId field is required, but missing for "${entityType}" in "${config.schema}"`,
           )
         }
 
         if (mergedSchema[entityType].entityId !== FieldType.STRING) {
           throw new Error(
-            `entityId field must be of type STRING, but is of type "${
-              mergedSchema[entityType].entityId
-            }" for "${entityType}" in "${config.schema}"`,
+            `entityId field must be of type STRING, but is of type "${mergedSchema[entityType].entityId}" for "${entityType}" in "${config.schema}"`,
           )
         }
 
@@ -73,6 +71,52 @@ CREATE TABLE sink_${entityType} (
 
 INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId IS NOT NULL;
 `
+
+        const fields = Object.entries(mergedSchema[entityType])
+        let timestampField = fields.find(
+          ([fieldName, _fieldType]) => fieldName === 'blockTimestamp',
+        )
+        if (!timestampField) {
+          timestampField = fields.find(([fieldName, _fieldType]) =>
+            fieldName?.toLowerCase().includes('timestamp'),
+          )
+        }
+        if (!timestampField?.[0]) {
+          throw new Error(
+            `No timestamp field found for entityType ${entityType} (blockTimestamp or any field containing "timestamp" in its name)`,
+          )
+        }
+
+        batchSql += `
+---
+--- ${entityType}
+---
+CREATE TABLE source_${entityType} (
+  ${fieldsSql},
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED;
+) WITH (
+  'connector' = 'database',
+  'mode' = 'read',
+  'namespace' = '{{ namespace }}',
+  'entity-type' = '${entityType}',
+  'scan.partition.num' = '10',
+  'scan.partition.column' = '${timestampField[0]}',
+  'scan.partition.lower-bound' = '{{ chrono(fromTimestamp | default("01-01-2020 00:00 UTC")) }}',
+  'scan.partition.upper-bound' = '{{ chrono(toTimestamp | default("now")) }}'
+);
+
+CREATE TABLE sink_${entityType} (
+  ${fieldsSql},
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED
+) WITH (
+  'connector' = 'mongodb',
+  'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
+  'database' = '${config.databaseName}',
+  'collection' = '${collectionName}'
+);
+
+INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId IS NOT NULL;
+`
       } catch (e: any) {
         throw new Error(
           `Failed to prepare manifest for entityType ${entityType}: ${
@@ -90,13 +134,25 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       `database/mongodb-${context.identifier}/streaming.sql`,
       streamingSql,
     )
+    context.writeStringFile(
+      `database/mongodb-${context.identifier}/batch.sql`,
+      batchSql,
+    )
 
-    manifest.enrichers.push({
-      id: `database-mongodb-${context.identifier}-streaming`,
-      engine: EnricherEngine.Flink,
-      size: 'small',
-      inputSql: `database/mongodb-${context.identifier}/streaming.sql`,
-    })
+    manifest.enrichers.push(
+      {
+        id: `database-mongodb-${context.identifier}-streaming`,
+        engine: EnricherEngine.Flink,
+        size: 'small',
+        inputSql: `database/mongodb-${context.identifier}/streaming.sql`,
+      },
+      {
+        id: `database-mongodb-${context.identifier}-batch`,
+        engine: EnricherEngine.Flink,
+        size: 'small',
+        inputSql: `database/mongodb-${context.identifier}/batch.sql`,
+      },
+    )
 
     // manifest.triggers.push({
     //   event: 'AfterBackfillSuccess',
@@ -110,11 +166,18 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 
     return manifest
   },
-  // registerScripts: async (context, config) => {
-  //   return {
-  //     'full-database-sync': () => {},
-  //   }
-  // }
+  registerScripts: (context): Record<string, SolutionScriptFunction> => {
+    return {
+      'database-manual-full-sync': async (_, options) => {
+        context.runCommand('enricher:trigger', [
+          `database-mongodb-${context.identifier}-batch`,
+          ...(options?.fromTimestamp
+            ? ['-p', `fromTimestamp='${options.fromTimestamp}'`]
+            : []),
+        ])
+      },
+    }
+  },
 }
 
 export default definition
@@ -180,9 +243,9 @@ function getSqlType(fieldType: FieldType) {
       return 'DOUBLE'
     case FieldType.BOOLEAN:
       return 'BOOLEAN'
-    case FieldType.STRING:
+    case FieldType.ARRAY:
       return 'STRING'
-    case FieldType.STRING:
+    case FieldType.OBJECT:
       return 'STRING'
     default:
       throw new Error(`Unsupported field type: ${fieldType}`)

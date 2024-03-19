@@ -1,20 +1,21 @@
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, expect, it, jest } from '@jest/globals'
 
-import { EnricherEngine, FieldType, SolutionContext } from "flair-sdk";
-import solutionDefinition from "./index.js";
+import solutionDefinition from './index.js'
+import { EnricherEngine, FieldType, SolutionContext } from 'flair-sdk'
 
-describe("solution", () => {
-  it("should generate streaming sql file", async () => {
+describe('solution', () => {
+  it('should generate streaming sql file', async () => {
     const context: jest.Mocked<SolutionContext> = {
-      identifier: "default",
+      identifier: 'default',
       readStringFile: jest.fn(),
       writeStringFile: jest.fn(),
       readYamlFile: jest.fn<any>(),
       writeYamlFile: jest.fn(),
       glob: jest.fn(),
-    };
+      runCommand: jest.fn(),
+    }
 
-    context.glob.mockReturnValueOnce(["schema.yaml"]);
+    context.glob.mockReturnValueOnce(['schema.yaml'])
     context.readYamlFile.mockReturnValueOnce(
       Promise.resolve({
         Swap: {
@@ -22,27 +23,31 @@ describe("solution", () => {
           amount: FieldType.BIGINT,
           amountUsd: FieldType.DOUBLE,
         },
-      })
-    );
+      }),
+    )
+
+    if (!solutionDefinition?.prepareManifest) {
+      throw new Error('prepareManifest is not defined in solution definition')
+    }
 
     const updatedManifest = await solutionDefinition.prepareManifest(
       context,
       {
-        schema: "schema.yaml",
-        databaseName: "my_db",
-        collectionsPrefix: "indexer_",
+        schema: 'schema.yaml',
+        databaseName: 'my_db',
+        collectionsPrefix: 'indexer_',
         connectionUri: '{{ secret("mongodb.uri") }}',
       },
       {
-        manifest: "1.0.0",
-        namespace: "my-test",
-        cluster: { id: "dev" },
-      }
-    );
+        manifest: '1.0.0',
+        namespace: 'my-test',
+        cluster: { id: 'dev' },
+      },
+    )
 
     expect(context.writeStringFile).toBeCalledWith(
-      "database/mongodb-default/streaming.sql",
-`SET 'execution.runtime-mode' = 'STREAMING';
+      'database/mongodb-default/streaming.sql',
+      `SET 'execution.runtime-mode' = 'STREAMING';
 ---
 --- Swap
 ---
@@ -69,15 +74,15 @@ CREATE TABLE sink_Swap (
 );
 
 INSERT INTO sink_Swap SELECT * FROM source_Swap WHERE entityId IS NOT NULL;
-`
-    );
+`,
+    )
 
-    expect(updatedManifest.enrichers?.length).toBe(1);
+    expect(updatedManifest.enrichers?.length).toBe(1)
     expect(updatedManifest.enrichers?.[0]).toMatchObject({
-      id: `database-mongodb-default-streaming`,
+      id: 'database-mongodb-default-streaming',
       engine: EnricherEngine.Flink,
       size: 'small',
-      inputSql: `database/mongodb-default/streaming.sql`,
-    });
-  });
-});
+      inputSql: 'database/mongodb-default/streaming.sql',
+    })
+  })
+})
