@@ -18,9 +18,9 @@ describe("solution", () => {
     context.readYamlFile.mockReturnValueOnce(
       Promise.resolve({
         Swap: {
-          entityId: FieldType.String,
-          amount: FieldType.Integer,
-          amountUsd: FieldType.Float,
+          entityId: FieldType.STRING,
+          amount: FieldType.BIGINT,
+          amountUsd: FieldType.DOUBLE,
         },
       })
     );

@@ -111,6 +111,12 @@ async function loadSchema(
     (schema) => context.glob(schema),
   )
 
+  if (!files.length) {
+    throw new Error(
+      `No schema files found for pattern(s) ${JSON.stringify(schemas)}`,
+    )
+  }
+
   const mergedSchema: Schema = {}
 
   for (const file of files) {
@@ -150,17 +156,17 @@ async function loadSchema(
 
 function getSqlType(fieldType: FieldType) {
   switch (fieldType) {
-    case FieldType.String:
+    case FieldType.STRING:
       return 'STRING'
-    case FieldType.Integer:
+    case FieldType.BIGINT:
       return 'BIGINT'
-    case FieldType.Float:
+    case FieldType.DOUBLE:
       return 'DOUBLE'
-    case FieldType.Boolean:
+    case FieldType.BOOLEAN:
       return 'BOOLEAN'
-    case FieldType.Object:
+    case FieldType.STRING:
       return 'STRING'
-    case FieldType.Array:
+    case FieldType.STRING:
       return 'STRING'
     default:
       throw new Error(`Unsupported field type: ${fieldType}`)

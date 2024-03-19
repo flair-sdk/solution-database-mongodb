@@ -39,7 +39,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "flair-sdk": "^1.6.2"
+    "flair-sdk": "^1.7.1"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
