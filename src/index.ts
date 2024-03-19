@@ -39,16 +39,16 @@ const definition: SolutionDefinition<Config> = {
         const fieldsSql = Object.entries(mergedSchema[entityType])
           .map(
             ([fieldName, fieldType]) =>
-              `\`${fieldName}\` ${getSqlType(fieldType)}`,
+              `  \`${fieldName}\` ${getSqlType(fieldType)}`,
           )
-          .join(', \n')
+          .join(',\n')
 
         streamingSql += `
 ---
 --- ${entityType}
 ---
 CREATE TABLE source_${entityType} (
-  ${fieldsSql},
+${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED;
 ) WITH (
   'connector' = 'stream',
@@ -60,7 +60,7 @@ CREATE TABLE source_${entityType} (
 );
 
 CREATE TABLE sink_${entityType} (
-  ${fieldsSql},
+${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
 ) WITH (
   'connector' = 'mongodb',
@@ -75,16 +75,11 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
         const fields = Object.entries(mergedSchema[entityType])
         let timestampField = fields.find(
           ([fieldName, _fieldType]) => fieldName === 'blockTimestamp',
-        )
+        )?.[0]
         if (!timestampField) {
           timestampField = fields.find(([fieldName, _fieldType]) =>
             fieldName?.toLowerCase().includes('timestamp'),
-          )
-        }
-        if (!timestampField?.[0]) {
-          throw new Error(
-            `No timestamp field found for entityType ${entityType} (blockTimestamp or any field containing "timestamp" in its name)`,
-          )
+          )?.[0]
         }
 
         batchSql += `
@@ -92,21 +87,26 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 --- ${entityType}
 ---
 CREATE TABLE source_${entityType} (
-  ${fieldsSql},
+${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED;
 ) WITH (
   'connector' = 'database',
   'mode' = 'read',
   'namespace' = '{{ namespace }}',
-  'entity-type' = '${entityType}',
+  'entity-type' = '${entityType}'${
+          timestampField
+            ? `,
   'scan.partition.num' = '10',
-  'scan.partition.column' = '${timestampField[0]}',
+  'scan.partition.column' = '${timestampField}',
   'scan.partition.lower-bound' = '{{ chrono(fromTimestamp | default("01-01-2020 00:00 UTC")) }}',
   'scan.partition.upper-bound' = '{{ chrono(toTimestamp | default("now")) }}'
+  `
+            : ''
+        }
 );
 
 CREATE TABLE sink_${entityType} (
-  ${fieldsSql},
+${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
 ) WITH (
   'connector' = 'mongodb',

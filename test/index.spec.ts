@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals'
 
-import solutionDefinition from './index.js'
+import solutionDefinition from '../src/index.ts'
 import { EnricherEngine, FieldType, SolutionContext } from 'flair-sdk'
 
 describe('solution', () => {
@@ -45,14 +45,16 @@ describe('solution', () => {
       },
     )
 
-    expect(context.writeStringFile).toBeCalledWith(
+    expect(context.writeStringFile).toHaveBeenNthCalledWith(1,
       'database/mongodb-default/streaming.sql',
       `SET 'execution.runtime-mode' = 'STREAMING';
 ---
 --- Swap
 ---
 CREATE TABLE source_Swap (
-  \`entityId\` STRING, \`amount\` BIGINT, \`amountUsd\` DOUBLE
+  \`entityId\` STRING,
+  \`amount\` BIGINT,
+  \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED;
 ) WITH (
   'connector' = 'stream',
@@ -64,7 +66,9 @@ CREATE TABLE source_Swap (
 );
 
 CREATE TABLE sink_Swap (
-  \`entityId\` STRING, \`amount\` BIGINT, \`amountUsd\` DOUBLE
+  \`entityId\` STRING,
+  \`amount\` BIGINT,
+  \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
 ) WITH (
   'connector' = 'mongodb',
@@ -77,12 +81,52 @@ INSERT INTO sink_Swap SELECT * FROM source_Swap WHERE entityId IS NOT NULL;
 `,
     )
 
-    expect(updatedManifest.enrichers?.length).toBe(1)
+    expect(context.writeStringFile).toHaveBeenNthCalledWith(2,
+      'database/mongodb-default/batch.sql',
+      `SET 'execution.runtime-mode' = 'BATCH';
+---
+--- Swap
+---
+CREATE TABLE source_Swap (
+  \`entityId\` STRING,
+  \`amount\` BIGINT,
+  \`amountUsd\` DOUBLE,
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED;
+) WITH (
+  'connector' = 'database',
+  'mode' = 'read',
+  'namespace' = '{{ namespace }}',
+  'entity-type' = 'Swap'
+);
+
+CREATE TABLE sink_Swap (
+  \`entityId\` STRING,
+  \`amount\` BIGINT,
+  \`amountUsd\` DOUBLE,
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED
+) WITH (
+  'connector' = 'mongodb',
+  'uri' = '{{ secret(\"mongodb.uri\") }}',
+  'database' = 'my_db',
+  'collection' = 'indexer_Swap'
+);
+
+INSERT INTO sink_Swap SELECT * FROM source_Swap WHERE entityId IS NOT NULL;
+`,
+    )
+
+    expect(updatedManifest.enrichers?.length).toBe(2)
     expect(updatedManifest.enrichers?.[0]).toMatchObject({
       id: 'database-mongodb-default-streaming',
       engine: EnricherEngine.Flink,
       size: 'small',
       inputSql: 'database/mongodb-default/streaming.sql',
+    })
+    expect(updatedManifest.enrichers?.[1]).toMatchObject({
+      id: 'database-mongodb-default-batch',
+      engine: EnricherEngine.Flink,
+      size: 'small',
+      inputSql: 'database/mongodb-default/batch.sql',
     })
   })
 })
