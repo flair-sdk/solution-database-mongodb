@@ -22,19 +22,35 @@ const definition: SolutionDefinition<Config> = {
       try {
         const collectionName = `${config.collectionsPrefix || ''}${entityType}`
 
+        if (!mergedSchema[entityType]?.entityId) {
+          throw new Error(
+            `entityId field is required, but missing for "${entityType}" in "${
+              config.schema
+            }"`,
+          )
+        }
+
+        if (mergedSchema[entityType].entityId !== FieldType.STRING) {
+          throw new Error(
+            `entityId field must be of type STRING, but is of type "${
+              mergedSchema[entityType].entityId
+            }" for "${entityType}" in "${config.schema}"`,
+          )
+        }
+
         const fieldsSql = Object.entries(mergedSchema[entityType])
           .map(
             ([fieldName, fieldType]) =>
               `\`${fieldName}\` ${getSqlType(fieldType)}`,
           )
-          .join(', ')
+          .join(', \n')
 
         streamingSql += `
 ---
 --- ${entityType}
 ---
 CREATE TABLE source_${entityType} (
-  ${fieldsSql}
+  ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED;
 ) WITH (
   'connector' = 'stream',
@@ -46,7 +62,7 @@ CREATE TABLE source_${entityType} (
 );
 
 CREATE TABLE sink_${entityType} (
-  ${fieldsSql}
+  ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
 ) WITH (
   'connector' = 'mongodb',
