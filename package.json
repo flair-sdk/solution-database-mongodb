@@ -48,6 +48,6 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
-    "flair-sdk": "^1.7.4"
+    "flair-sdk": "^1.7.5"
   }
 }
