@@ -131,27 +131,29 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       manifest.enrichers = []
     }
 
+    const instance = config.instance || 'default'
+
     context.writeStringFile(
-      `database/mongodb-${config.instance || 'default'}/streaming.sql`,
+      `database/mongodb-${instance}/streaming.sql`,
       streamingSql,
     )
     context.writeStringFile(
-      `database/mongodb-${config.instance || 'default'}/batch.sql`,
+      `database/mongodb-${instance}/batch.sql`,
       batchSql,
     )
 
     manifest.enrichers.push(
       {
-        id: `database-mongodb-${config.instance}-streaming`,
+        id: `database-mongodb-${instance}-streaming`,
         engine: EnricherEngine.Flink,
         size: 'small',
-        inputSql: `database/mongodb-${config.instance}/streaming.sql`,
+        inputSql: `database/mongodb-${instance}/streaming.sql`,
       },
       {
-        id: `database-mongodb-${config.instance}-batch`,
+        id: `database-mongodb-${instance}-batch`,
         engine: EnricherEngine.Flink,
         size: 'small',
-        inputSql: `database/mongodb-${config.instance}/batch.sql`,
+        inputSql: `database/mongodb-${instance}/batch.sql`,
       },
     )
 
@@ -168,10 +170,11 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
     return manifest
   },
   registerScripts: (context, config): Record<string, SolutionScriptFunction> => {
+    const instance = config.instance || 'default'
     return {
       'database-manual-full-sync': async (_, options) => {
         context.runCommand('enricher:trigger', [
-          `database-mongodb-${config.instance || 'default'}-batch`,
+          `database-mongodb-${instance}-batch`,
           ...(options?.fromTimestamp
             ? ['-p', `fromTimestamp='${options.fromTimestamp}'`]
             : []),
