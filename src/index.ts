@@ -9,6 +9,7 @@ import {
 
 export type Config = {
   schema: string | string[]
+  instance?: string
   connectionUri: string
   databaseName: string
   collectionsPrefix: string
@@ -131,26 +132,26 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
     }
 
     context.writeStringFile(
-      `database/mongodb-${context.identifier}/streaming.sql`,
+      `database/mongodb-${config.instance || 'default'}/streaming.sql`,
       streamingSql,
     )
     context.writeStringFile(
-      `database/mongodb-${context.identifier}/batch.sql`,
+      `database/mongodb-${config.instance || 'default'}/batch.sql`,
       batchSql,
     )
 
     manifest.enrichers.push(
       {
-        id: `database-mongodb-${context.identifier}-streaming`,
+        id: `database-mongodb-${config.instance}-streaming`,
         engine: EnricherEngine.Flink,
         size: 'small',
-        inputSql: `database/mongodb-${context.identifier}/streaming.sql`,
+        inputSql: `database/mongodb-${config.instance}/streaming.sql`,
       },
       {
-        id: `database-mongodb-${context.identifier}-batch`,
+        id: `database-mongodb-${config.instance}-batch`,
         engine: EnricherEngine.Flink,
         size: 'small',
-        inputSql: `database/mongodb-${context.identifier}/batch.sql`,
+        inputSql: `database/mongodb-${config.instance}/batch.sql`,
       },
     )
 
@@ -166,11 +167,11 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 
     return manifest
   },
-  registerScripts: (context): Record<string, SolutionScriptFunction> => {
+  registerScripts: (context, config): Record<string, SolutionScriptFunction> => {
     return {
       'database-manual-full-sync': async (_, options) => {
         context.runCommand('enricher:trigger', [
-          `database-mongodb-${context.identifier}-batch`,
+          `database-mongodb-${config.instance || 'default'}-batch`,
           ...(options?.fromTimestamp
             ? ['-p', `fromTimestamp='${options.fromTimestamp}'`]
             : []),
