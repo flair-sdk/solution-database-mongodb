@@ -49,7 +49,7 @@ const definition: SolutionDefinition<Config> = {
 ---
 CREATE TABLE source_${entityType} (
 ${fieldsSql},
-  PRIMARY KEY (\`entityId\`) NOT ENFORCED;
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED
 ) WITH (
   'connector' = 'stream',
   'mode' = 'cdc',
@@ -88,7 +88,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 ---
 CREATE TABLE source_${entityType} (
 ${fieldsSql},
-  PRIMARY KEY (\`entityId\`) NOT ENFORCED;
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED
 ) WITH (
   'connector' = 'database',
   'mode' = 'read',
