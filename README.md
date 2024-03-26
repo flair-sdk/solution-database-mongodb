@@ -26,6 +26,7 @@ Swap:
   to: STRING
   amount: STRING
   amountUSD: DOUBLE
+  someObjectOrArray: STRING # all json stringified objects or arrays will be automatically stored as acttual nested documents/arrays in mongo
 ```
 
 3. Add the MongoDB solution to your [manifest.yml.mustache](https://github.com/flair-sdk/starter-boilerplate/blob/main/manifest.yml.mustache) usually created from starter-boilerplate repository:
