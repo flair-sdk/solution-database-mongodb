@@ -1,12 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals'
 
-import solutionDefinition from '../src/index.ts'
+import solutionDefinition, { Config } from '../src/index.ts'
 import { EnricherEngine, FieldType, SolutionContext } from 'flair-sdk'
 
 describe('solution', () => {
   it('should generate streaming sql file', async () => {
-    const context: jest.Mocked<SolutionContext> = {
-      identifier: 'default',
+    const context: jest.Mocked<SolutionContext<Config>> = {
+      solutionUsage: {source: 'test', config: {}},
+      solutionDefinition,
+      copyDir: jest.fn(),
       readStringFile: jest.fn(),
       writeStringFile: jest.fn(),
       readYamlFile: jest.fn<any>(),
@@ -55,8 +57,8 @@ CREATE TABLE source_Swap (
   \`entityId\` STRING,
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
-  PRIMARY KEY (\`entityId\`) NOT ENFORCED;
-) WITH (
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'stream',
   'mode' = 'cdc',
   'namespace' = '{{ namespace }}',
@@ -70,7 +72,7 @@ CREATE TABLE sink_Swap (
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) WITH (
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'mongodb',
   'uri' = '{{ secret(\"mongodb.uri\") }}',
   'database' = 'my_db',
@@ -91,8 +93,8 @@ CREATE TABLE source_Swap (
   \`entityId\` STRING,
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
-  PRIMARY KEY (\`entityId\`) NOT ENFORCED;
-) WITH (
+  PRIMARY KEY (\`entityId\`) NOT ENFORCED
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'database',
   'mode' = 'read',
   'namespace' = '{{ namespace }}',
@@ -104,7 +106,7 @@ CREATE TABLE sink_Swap (
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) WITH (
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'mongodb',
   'uri' = '{{ secret(\"mongodb.uri\") }}',
   'database' = 'my_db',

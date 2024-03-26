@@ -51,7 +51,7 @@ const definition: SolutionDefinition<Config> = {
 CREATE TABLE source_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) WITH (
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'stream',
   'mode' = 'cdc',
   'namespace' = '{{ namespace }}',
@@ -63,7 +63,7 @@ ${fieldsSql},
 CREATE TABLE sink_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) WITH (
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'mongodb',
   'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
   'database' = '${config.databaseName}',
@@ -90,7 +90,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 CREATE TABLE source_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) WITH (
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'database',
   'mode' = 'read',
   'namespace' = '{{ namespace }}',
@@ -109,7 +109,7 @@ ${fieldsSql},
 CREATE TABLE sink_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) WITH (
+) PARTITIONED BY (\`entityId\`) WITH (
   'connector' = 'mongodb',
   'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
   'database' = '${config.databaseName}',
@@ -187,7 +187,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 export default definition
 
 async function loadSchema(
-  context: SolutionContext,
+  context: SolutionContext<Config>,
   schemas: string | string[],
 ): Promise<Schema> {
   const files = (Array.isArray(schemas) ? schemas : [schemas]).flatMap(
