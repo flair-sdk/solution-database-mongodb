@@ -19,12 +19,12 @@ pnpm install @flair-sdk/solution-database-mongodb
 ---
 Swap:
   entityId: STRING
-  entityUpdatedAt: BIGINT
-  chainId: BIGINT
+  entityUpdatedAt: INT64
+  chainId: INT64
   poolAddress: STRING
   from: STRING
   to: STRING
-  amount: STRING
+  amount: INT256
   amountUSD: DOUBLE
   someObjectOrArray: STRING # all json stringified objects or arrays will be automatically stored as acttual nested documents/arrays in mongo
 ```
