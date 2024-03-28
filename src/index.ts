@@ -137,10 +137,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       `database/mongodb-${instance}/streaming.sql`,
       streamingSql,
     )
-    context.writeStringFile(
-      `database/mongodb-${instance}/batch.sql`,
-      batchSql,
-    )
+    context.writeStringFile(`database/mongodb-${instance}/batch.sql`, batchSql)
 
     manifest.enrichers.push(
       {
@@ -169,7 +166,10 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 
     return manifest
   },
-  registerScripts: (context, config): Record<string, SolutionScriptFunction> => {
+  registerScripts: (
+    context,
+    config,
+  ): Record<string, SolutionScriptFunction> => {
     const instance = config.instance || 'default'
     return {
       'database-manual-full-sync': async (_, options) => {
@@ -241,9 +241,11 @@ function getSqlType(fieldType: FieldType) {
   switch (fieldType) {
     case FieldType.STRING:
       return 'STRING'
-    case FieldType.BIGINT:
+    case FieldType.INT256:
+      return 'STRING'
+    case FieldType.INT64:
       return 'BIGINT'
-    case FieldType.DOUBLE:
+    case FieldType.FLOAT8:
       return 'DOUBLE'
     case FieldType.BOOLEAN:
       return 'BOOLEAN'
@@ -252,6 +254,10 @@ function getSqlType(fieldType: FieldType) {
     case FieldType.OBJECT:
       return 'STRING'
     default:
-      throw new Error(`Unsupported field type: ${fieldType}`)
+      throw new Error(
+        `Unsupported field type: ${fieldType} select from: ${Object.values(
+          FieldType,
+        ).join(', ')}`,
+      )
   }
 }

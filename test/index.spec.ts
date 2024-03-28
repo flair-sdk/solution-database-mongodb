@@ -6,7 +6,7 @@ import { EnricherEngine, FieldType, SolutionContext } from 'flair-sdk'
 describe('solution', () => {
   it('should generate streaming sql file', async () => {
     const context: jest.Mocked<SolutionContext<Config>> = {
-      solutionUsage: {source: 'test', config: {}},
+      solutionUsage: { source: 'test', config: {} },
       solutionDefinition,
       copyDir: jest.fn(),
       readStringFile: jest.fn(),
@@ -47,7 +47,8 @@ describe('solution', () => {
       },
     )
 
-    expect(context.writeStringFile).toHaveBeenNthCalledWith(1,
+    expect(context.writeStringFile).toHaveBeenNthCalledWith(
+      1,
       'database/mongodb-default/streaming.sql',
       `SET 'execution.runtime-mode' = 'STREAMING';
 ---
@@ -83,7 +84,8 @@ INSERT INTO sink_Swap SELECT * FROM source_Swap WHERE entityId IS NOT NULL;
 `,
     )
 
-    expect(context.writeStringFile).toHaveBeenNthCalledWith(2,
+    expect(context.writeStringFile).toHaveBeenNthCalledWith(
+      2,
       'database/mongodb-default/batch.sql',
       `SET 'execution.runtime-mode' = 'BATCH';
 ---
