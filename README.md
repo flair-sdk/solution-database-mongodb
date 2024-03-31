@@ -37,7 +37,7 @@ solutions:
   - source: '@flair-sdk/solution-database-mongodb'
     config:
       schema:
-        - src/schemas/*.yaml
+        - src/schemas/*.yml
       connectionUri: '{{{ mongoUri }}}'
       databaseName: flair
 ```

@@ -59,7 +59,7 @@ CREATE TABLE source_Swap (
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'stream',
   'mode' = 'cdc',
   'namespace' = '{{ namespace }}',
@@ -73,7 +73,7 @@ CREATE TABLE sink_Swap (
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'mongodb',
   'uri' = '{{ secret(\"mongodb.uri\") }}',
   'database' = 'my_db',
@@ -96,7 +96,7 @@ CREATE TABLE source_Swap (
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'database',
   'mode' = 'read',
   'namespace' = '{{ namespace }}',
@@ -108,7 +108,7 @@ CREATE TABLE sink_Swap (
   \`amount\` BIGINT,
   \`amountUsd\` DOUBLE,
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'mongodb',
   'uri' = '{{ secret(\"mongodb.uri\") }}',
   'database' = 'my_db',

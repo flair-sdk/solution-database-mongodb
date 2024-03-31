@@ -53,7 +53,7 @@ const definition: SolutionDefinition<Config> = {
 CREATE TABLE source_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'stream',
   'mode' = 'cdc',
   'namespace' = '{{ namespace }}',
@@ -65,7 +65,7 @@ ${fieldsSql},
 CREATE TABLE sink_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'mongodb',
   'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
   'database' = '${config.databaseName}',
@@ -92,7 +92,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
 CREATE TABLE source_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'database',
   'mode' = 'read',
   'namespace' = '{{ namespace }}',
@@ -111,7 +111,7 @@ ${fieldsSql},
 CREATE TABLE sink_${entityType} (
 ${fieldsSql},
   PRIMARY KEY (\`entityId\`) NOT ENFORCED
-) PARTITIONED BY (\`entityId\`) WITH (
+) WITH (
   'connector' = 'mongodb',
   'uri' = '${config.connectionUri || '{{ secret("mongodb.uri") }}'}',
   'database' = '${config.databaseName}',
