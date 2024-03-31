@@ -1,4 +1,6 @@
+import { DatabaseSyncEnricherParameters } from './types.js'
 import {
+  AppError,
   EnricherEngine,
   FieldType,
   Schema,
@@ -119,11 +121,13 @@ ${fieldsSql},
 INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId IS NOT NULL;
 `
       } catch (e: any) {
-        throw new Error(
-          `Failed to prepare manifest for entityType ${entityType}: ${
-            e?.stack || e?.message || e?.toString()
-          }`,
-        )
+        throw AppError.causedBy(e, {
+          code: 'ManifestPreparationError',
+          message: 'Failed to prepare manifest for user-defined entity',
+          details: {
+            entityType,
+          },
+        })
       }
     }
 
@@ -154,16 +158,6 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       },
     )
 
-    // manifest.triggers.push({
-    //   event: 'AfterBackfillSuccess',
-    //   action: {
-    //     method: 'triggerEnricher',
-    //     payload: {
-    //       id: `database-mongodb-${context.identifier}-batch`
-    //     }
-    //   }
-    // });
-
     return manifest
   },
   registerScripts: (
@@ -172,13 +166,18 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
   ): Record<string, SolutionScriptFunction> => {
     const instance = config.instance || 'default'
     return {
-      'database-manual-full-sync': async (_, options) => {
-        context.runCommand('enricher:trigger', [
-          `database-mongodb-${instance}-batch`,
-          ...(options?.fromTimestamp
-            ? ['-p', `fromTimestamp='${options.fromTimestamp}'`]
-            : []),
-        ])
+      'database-manual-full-sync': {
+        run: async (params: DatabaseSyncEnricherParameters) => {
+          context.runCommand('enricher:trigger', [
+            `database-mongodb-${instance}-batch`,
+            ...(params?.fromTimestamp
+              ? ['-p', `fromTimestamp='${params.fromTimestamp}'`]
+              : []),
+            ...(params?.toTimestamp
+              ? ['-p', `toTimestamp='${params.toTimestamp}'`]
+              : []),
+          ])
+        },
       },
     }
   },
@@ -195,9 +194,13 @@ async function loadSchema(
   )
 
   if (!files.length) {
-    throw new Error(
-      `No schema files found for pattern(s) ${JSON.stringify(schemas)}`,
-    )
+    throw new AppError({
+      code: 'SchemaNotFoundError',
+      message: 'No schema files found for define path or pattern(s)',
+      details: {
+        schemas,
+      },
+    })
   }
 
   const mergedSchema: Schema = {}
@@ -207,30 +210,48 @@ async function loadSchema(
       const schema = await context.readYamlFile<Schema>(file)
 
       if (!schema || typeof schema !== 'object') {
-        throw new Error(
-          `Schema from ${file} must be an object defined in YAML format`,
-        )
+        throw new AppError({
+          code: 'InvalidSchemaError',
+          message: 'Schema must be an object defined in YAML format',
+          details: {
+            file,
+          },
+        })
       }
 
       for (const [type, fields] of Object.entries(schema)) {
         if (!fields || typeof fields !== 'object') {
-          throw new Error(
-            `Fields for entityType ${type} in schema from ${file} must be an object`,
-          )
+          throw new AppError({
+            code: 'InvalidSchemaError',
+            message: 'Fields for entitiy schema must be an object',
+            details: {
+              entityType: type,
+              file,
+            },
+          })
         }
 
         if (mergedSchema[type]) {
-          throw new Error(`Type ${type} is already defined in another schema`)
+          throw new AppError({
+            code: 'DuplicateSchemaError',
+            message: 'Entity type is already defined in another schema',
+            details: {
+              entityType: type,
+              file,
+            },
+          })
         }
 
         mergedSchema[type] = fields
       }
     } catch (e: any) {
-      throw new Error(
-        `Failed to load schema YAML from ${file}: ${
-          e?.stack || e?.message || e?.toString()
-        }`,
-      )
+      throw AppError.causedBy(e, {
+        code: 'SchemaLoadError',
+        message: 'Failed to load schema YAML',
+        details: {
+          file,
+        },
+      })
     }
   }
 

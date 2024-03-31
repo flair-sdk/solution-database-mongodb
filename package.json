@@ -13,14 +13,15 @@
     "format": "rome format . --write",
     "lint": "rome check .",
     "lint:fix": "pnpm lint --apply-unsafe",
-    "build": "tsc --project tsconfig.json --outDir ./dist --removeComments --verbatimModuleSyntax false"
+    "build": "rm -rf dist && tsc --project tsconfig.json --outDir ./dist --removeComments --verbatimModuleSyntax false",
+    "publish:patch": "npm run build && npm version patch && npm publish --access public",
+    "publish:minor": "npm run build && npm version minor && npm publish --access public",
+    "publish:major": "npm run build && npm version major && npm publish --access public"
   },
   "keywords": [],
   "author": "gm@flair.build",
   "files": [
-    "dist",
-    "!dist/**/*.tsbuildinfo",
-    "src/**/*.ts"
+    "*"
   ],
   "exports": {
     ".": {
@@ -49,6 +50,11 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
-    "flair-sdk": "^1.11.7"
+    "@flair-sdk/contracts": "^2.27.0",
+    "@flair-sdk/registry": "^2.27.0",
+    "axios": "0.26.1",
+    "ethers": "^5.7.2",
+    "flair-sdk": "^1.12.5",
+    "p-limit": "^5.0.0"
   }
 }
