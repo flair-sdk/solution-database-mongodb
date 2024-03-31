@@ -4,7 +4,7 @@
   "private": false,
   "description": "Bundled solution to add MongoDB database sync to a Flair indexing cluster",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/src/index.js",
   "types": "./dist/types/index.d.ts",
   "typings": "./dist/types/index.d.ts",
   "scripts": {
