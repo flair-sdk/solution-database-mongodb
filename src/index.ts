@@ -200,6 +200,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
         run: async (params?: { autoApprove?: boolean }) => {
           await context.runCommand('deploy', [
             '--skip-hooks',
+            '--do-not-exit',
             ...(params?.autoApprove ? ['--auto-approve'] : []),
           ]);
         },
