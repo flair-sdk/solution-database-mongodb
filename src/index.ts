@@ -167,7 +167,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
     return {
       'database-manual-full-sync': {
         run: async (params: DatabaseSyncEnricherParameters) => {
-          context.runCommand('enricher:trigger', [
+          await context.runCommand('enricher:trigger', [
             `database-mongodb-${instance}-batch`,
             ...(params?.fromTimestamp
               ? ['-p', `fromTimestamp='${params.fromTimestamp}'`]
