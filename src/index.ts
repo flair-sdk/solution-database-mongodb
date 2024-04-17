@@ -96,8 +96,7 @@ ${fieldsSql},
   'connector' = 'database',
   'mode' = 'read',
   'namespace' = '{{ namespace }}',
-  'entity-type' = '${entityType}'${
-          timestampField
+  'entity-type' = '${entityType}'${timestampField
             ? `,
   'scan.partition.num' = '10',
   'scan.partition.column' = '${timestampField}',
@@ -105,7 +104,7 @@ ${fieldsSql},
   'scan.partition.upper-bound' = '{{ chrono(toTimestamp | default("now")) }}'
   `
             : ''
-        }
+          }
 );
 
 CREATE TABLE sink_${entityType} (
@@ -176,11 +175,48 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
             ...(params?.toTimestamp
               ? ['-p', `toTimestamp='${params.toTimestamp}'`]
               : []),
+            ...(params?.autoApprove ? ['--auto-approve'] : []),
           ])
         },
       },
     }
   },
+  registerHooks: async (context) => {
+    return [
+      {
+        for: 'pre-deploy',
+        id: 'infer-schema',
+        title: 'infer schema',
+        run: async (params?: { autoApprove?: boolean }) => {
+          await context.runCommand('util:infer-schema', [
+            ...(params?.autoApprove ? ['--auto-approve'] : []),
+          ]);
+        },
+      },
+      {
+        for: 'pre-deploy',
+        id: 'deploy-streaming',
+        title: 'configure real-time sync',
+        run: async (params?: { autoApprove?: boolean }) => {
+          await context.runCommand('deploy', [
+            '--vanilla-run',
+            ...(params?.autoApprove ? ['--auto-approve'] : []),
+          ]);
+        },
+      },
+      {
+        for: 'pre-deploy',
+        id: 'mongodb-full-sync',
+        title: 'one-off historical sync (mongodb)',
+        run: async (params?: { autoApprove?: boolean }) => {
+          await context.runCommand('script', [
+            'database-manual-full-sync',
+            JSON.stringify(params || {}),
+          ]);
+        },
+      },
+    ];
+  }
 }
 
 export default definition

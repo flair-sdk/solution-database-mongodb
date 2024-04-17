@@ -7,7 +7,7 @@ specifiers:
   '@types/jest': ^29.5.12
   axios: 0.26.1
   ethers: ^5.7.2
-  flair-sdk: ^1.12.5
+  flair-sdk: ^1.12.6
   jest: ^29.7.0
   p-limit: ^5.0.0
   rome: ^12.1.3
@@ -21,7 +21,7 @@ dependencies:
   '@flair-sdk/registry': 2.82.3_axios@0.26.1+ethers@5.7.2
   axios: 0.26.1
   ethers: 5.7.2
-  flair-sdk: 1.12.5_gkhuknuylu3o4a27jsz3lj3z4y
+  flair-sdk: 1.12.6_gkhuknuylu3o4a27jsz3lj3z4y
   p-limit: 5.0.0
 
 devDependencies:
@@ -1728,8 +1728,8 @@ packages:
       path-exists: 4.0.0
     dev: true
 
-  /flair-sdk/1.12.5_gkhuknuylu3o4a27jsz3lj3z4y:
-    resolution: {integrity: sha512-j2Knm2FOcpLZ5Scywt3Ii8JvXdF9kxXLBArDzmviIifQVWnviy+qkVSSR/1OyRfwDKPg3DAzua0ZyXBGRdFLQg==}
+  /flair-sdk/1.12.6_gkhuknuylu3o4a27jsz3lj3z4y:
+    resolution: {integrity: sha512-DF3XOEiRvn7C5hU8mFLhQTPEiyZaRL6gIGPkbTWI9aM3Mm0EQS5AfelypM74TSn5ZauyIzjFFfYqmk7+IHzl8Q==}
     peerDependencies:
       '@ethersproject/providers': ^5.7.2
       axios: 0.26.1
