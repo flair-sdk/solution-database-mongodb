@@ -199,7 +199,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
         title: 'configure real-time sync',
         run: async (params?: { autoApprove?: boolean }) => {
           await context.runCommand('deploy', [
-            '--vanilla-run',
+            '--skip-hooks',
             ...(params?.autoApprove ? ['--auto-approve'] : []),
           ]);
         },
@@ -207,7 +207,7 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       {
         for: 'pre-deploy',
         id: 'mongodb-full-sync',
-        title: 'one-off historical sync (mongodb)',
+        title: 'one-off historical sync for mongodb',
         run: async (params?: { autoApprove?: boolean }) => {
           await context.runCommand('script', [
             'database-manual-full-sync',
