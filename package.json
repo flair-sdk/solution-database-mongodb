@@ -50,11 +50,6 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
-    "@flair-sdk/contracts": "^2.27.0",
-    "@flair-sdk/registry": "^2.27.0",
-    "axios": "0.26.1",
-    "ethers": "^5.7.2",
-    "flair-sdk": "^1.12.6",
-    "p-limit": "^5.0.0"
+    "flair-sdk": "^1.12.8"
   }
 }
