@@ -9,12 +9,21 @@ import {
   SolutionScriptFunction,
 } from 'flair-sdk'
 
+export type EntityOption = {
+  batchPartitions?: number
+}
+
 export type Config = {
   schema: string | string[]
   instance?: string
   connectionUri: string
   databaseName: string
   collectionsPrefix: string
+  flink?: {
+    logLevel?: string
+    entityOverrides?: Record<string, EntityOption>
+    defaultBatchSlots?: number
+  }
 }
 
 const definition: SolutionDefinition<Config> = {
@@ -96,15 +105,18 @@ ${fieldsSql},
   'connector' = 'database',
   'mode' = 'read',
   'namespace' = '{{ namespace }}',
-  'entity-type' = '${entityType}'${timestampField
+  'entity-type' = '${entityType}'${
+          timestampField
             ? `,
-  'scan.partition.num' = '10',
+  'scan.partition.num' = '${
+    config?.flink?.entityOverrides?.[entityType]?.batchPartitions || 20
+  }',
   'scan.partition.column' = '${timestampField}',
   'scan.partition.lower-bound' = '{{ chrono(fromTimestamp | default("01-01-2020 00:00 UTC")) }}',
   'scan.partition.upper-bound' = '{{ chrono(toTimestamp | default("now")) }}'
   `
             : ''
-          }
+        }
 );
 
 CREATE TABLE sink_${entityType} (
@@ -176,6 +188,14 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
               ? ['-p', `toTimestamp='${params.toTimestamp}'`]
               : []),
             ...(params?.autoApprove ? ['--auto-approve'] : []),
+            ...(config?.flink?.defaultBatchSlots
+              ? ['-o', `slots=${config.flink.defaultBatchSlots}`]
+              : []),
+            ...(params?.logLevel
+              ? ['-l', `${params.logLevel}`]
+              : config?.flink?.logLevel
+              ? ['-l', `${config.flink.logLevel}`]
+              : []),
           ])
         },
       },
@@ -186,11 +206,11 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       {
         for: 'pre-deploy',
         id: 'infer-schema',
-        title: 'infer schema',
+        title: 'infer schema (optional)',
         run: async (params?: { autoApprove?: boolean }) => {
           await context.runCommand('util:infer-schema', [
             ...(params?.autoApprove ? ['--auto-approve'] : []),
-          ]);
+          ])
         },
       },
       {
@@ -202,22 +222,22 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
             '--skip-hooks',
             '--do-not-exit',
             ...(params?.autoApprove ? ['--auto-approve'] : []),
-          ]);
+          ])
         },
       },
       {
         for: 'pre-deploy',
         id: 'mongodb-full-sync',
         title: 'one-off historical sync for mongodb',
-        run: async (params?: { autoApprove?: boolean }) => {
+        run: async (params?: { autoApprove?: boolean; logLevel?: string }) => {
           await context.runCommand('script', [
             'database-manual-full-sync',
             JSON.stringify(params || {}),
-          ]);
+          ])
         },
       },
-    ];
-  }
+    ]
+  },
 }
 
 export default definition
@@ -226,13 +246,11 @@ async function loadSchema(
   context: SolutionContext<Config>,
   schemas: string | string[],
 ): Promise<Schema> {
-  const arrayedSchemas = Array.isArray(schemas) ? schemas : [schemas];
-  const files = arrayedSchemas.flatMap(
-    (schema) => context.glob(schema),
-  )
+  const arrayedSchemas = Array.isArray(schemas) ? schemas : [schemas]
+  const files = arrayedSchemas.flatMap((schema) => context.glob(schema))
 
   if (!files.length) {
-    console.warn(`No schema files found in: ${arrayedSchemas.join(' ')}`);
+    console.warn(`No schema files found in: ${arrayedSchemas.join(' ')}`)
   }
 
   const mergedSchema: Schema = {}
