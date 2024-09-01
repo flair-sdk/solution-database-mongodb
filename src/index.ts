@@ -2,6 +2,7 @@ import { DatabaseSyncEnricherParameters } from './types.js'
 import {
   AppError,
   EnricherEngine,
+  EnricherSize,
   FieldType,
   Schema,
   SolutionContext,
@@ -21,6 +22,7 @@ export type Config = {
   collectionsPrefix: string
   flink?: {
     logLevel?: string
+    instanceSize?: EnricherSize
     entityOverrides?: Record<string, EntityOption>
     defaultBatchSlots?: number
   }
@@ -158,13 +160,13 @@ INSERT INTO sink_${entityType} SELECT * FROM source_${entityType} WHERE entityId
       {
         id: `database-mongodb-${instance}-streaming`,
         engine: EnricherEngine.Flink,
-        size: 'small',
+        size: config?.flink?.instanceSize || 'small',
         inputSql: `database/mongodb-${instance}/streaming.sql`,
       },
       {
         id: `database-mongodb-${instance}-batch`,
         engine: EnricherEngine.Flink,
-        size: 'small',
+        size: config?.flink?.instanceSize || 'small',
         inputSql: `database/mongodb-${instance}/batch.sql`,
       },
     )
